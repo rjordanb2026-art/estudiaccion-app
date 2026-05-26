@@ -16,6 +16,9 @@
   <!-- Local Stylesheets -->
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
+  <!-- PDF.js and jsPDF Libraries for Annotation and Import/Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body class="cozy-theme">
 
@@ -197,6 +200,9 @@
               <input type="text" id="viewer-notebook-title" value="Título de Libreta" class="notebook-title-input">
               <span class="notebook-subject-tag" id="viewer-notebook-subject">Materia</span>
             </div>
+            <button class="btn btn-secondary btn-icon-only" id="btn-delete-active-notebook" title="Eliminar Libreta Completa" style="color: var(--color-danger); border-color: rgba(214, 122, 108, 0.25); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 50%; margin-left: 8px;">
+              <i class="fa-solid fa-trash-can" style="font-size: 0.95rem;"></i>
+            </button>
           </div>
 
           <!-- Canvas & Editor Controls Toolbar -->
@@ -215,9 +221,20 @@
               <button class="tool-btn" data-tool="text" id="tool-text" title="Insertar Bloque de Texto (Haz clic en el papel)">
                 <i class="fa-solid fa-font"></i>
               </button>
+              <button class="tool-btn" data-tool="shape" id="tool-shape" title="Dibujar Formas / Mapas">
+                <i class="fa-solid fa-shapes"></i>
+              </button>
               <button class="tool-btn active" data-tool="hand" id="tool-hand" title="Mover Lienzo (Mano)">
                 <i class="fa-solid fa-hand"></i>
               </button>
+
+              <!-- Shape selector popup/dropdown, shown when shape tool is active -->
+              <div class="shape-selector-dropdown hidden" id="shape-selector" style="display: none; align-items: center; gap: 6px; padding-left: 8px; border-left: 1px solid var(--color-border);">
+                <button class="shape-opt active" data-shape="rectangle" title="Rectángulo ⬜" style="background: transparent; border: none; font-size: 1rem; cursor: pointer; color: var(--color-text-dark); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: var(--cozy-border-radius-sm);"><i class="fa-regular fa-square"></i></button>
+                <button class="shape-opt" data-shape="oval" title="Círculo/Óvalo ⭕" style="background: transparent; border: none; font-size: 1rem; cursor: pointer; color: var(--color-text-dark); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: var(--cozy-border-radius-sm);"><i class="fa-regular fa-circle"></i></button>
+                <button class="shape-opt" data-shape="arrow" title="Flecha de Conexión ↗️" style="background: transparent; border: none; font-size: 1rem; cursor: pointer; color: var(--color-text-dark); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: var(--cozy-border-radius-sm);"><i class="fa-solid fa-arrow-right"></i></button>
+                <button class="shape-opt" data-shape="brace" title="Llave '{' 🔑" style="background: transparent; border: none; font-size: 1.1rem; cursor: pointer; font-family: monospace; font-weight: 700; color: var(--color-text-dark); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: var(--cozy-border-radius-sm);">{</button>
+              </div>
             </div>
 
             <!-- Customizer (Stroke size & Transparency) -->
@@ -247,8 +264,28 @@
               </select>
             </div>
 
+            <!-- Page controls (Multipágina) -->
+            <div class="toolbar-group pagination-controls" style="display: flex; align-items: center; gap: 8px;">
+              <button class="btn btn-secondary btn-icon-only" id="btn-page-prev" title="Página Anterior" style="width: 32px; height: 32px; font-size: 0.8rem; padding: 0; display: flex; align-items: center; justify-content: center;">
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              <span id="page-indicator" style="font-size: 0.85rem; font-weight: 700; color: var(--color-text-dark); min-width: 90px; text-align: center;">Pág. 1 / 1</span>
+              <button class="btn btn-secondary btn-icon-only" id="btn-page-next" title="Página Siguiente" style="width: 32px; height: 32px; font-size: 0.8rem; padding: 0; display: flex; align-items: center; justify-content: center;">
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+              <button class="btn btn-secondary btn-icon-only" id="btn-page-add" title="Añadir Nueva Hoja" style="width: 32px; height: 32px; font-size: 0.85rem; color: var(--color-primary-dark); padding: 0; display: flex; align-items: center; justify-content: center;">
+                <i class="fa-solid fa-file-circle-plus"></i>
+              </button>
+              <button class="btn btn-secondary btn-icon-only" id="btn-page-delete" title="Eliminar Hoja Actual" style="width: 32px; height: 32px; font-size: 0.85rem; color: var(--color-danger); padding: 0; display: flex; align-items: center; justify-content: center;">
+                <i class="fa-solid fa-file-circle-minus"></i>
+              </button>
+            </div>
+
             <!-- Actions -->
             <div class="toolbar-group">
+              <button class="btn btn-secondary btn-icon-only" id="btn-enter-fullscreen" title="Ver Solo Hoja (Lienzo Completo)">
+                <i class="fa-solid fa-expand"></i>
+              </button>
               <button class="btn btn-secondary btn-icon-only" id="btn-canvas-undo" title="Deshacer Trazo (Ctrl+Z)">
                 <i class="fa-solid fa-rotate-left"></i>
               </button>
@@ -265,6 +302,9 @@
               <button class="btn btn-secondary btn-icon-only" id="btn-canvas-download" title="Descargar como Imagen">
                 <i class="fa-solid fa-download"></i>
               </button>
+              <button class="btn btn-secondary btn-icon-only" id="btn-export-pdf" title="Exportar como PDF Editado" style="color: var(--color-primary-dark); font-weight: 700;">
+                <i class="fa-solid fa-file-pdf"></i>
+              </button>
               <button class="btn btn-accent" id="btn-add-notebook-flashcard">
                 <i class="fa-solid fa-lightbulb"></i> Añadir Tarjeta
               </button>
@@ -276,7 +316,8 @@
         <div class="hybrid-workspace-container">
           <div class="canvas-scroll-container">
             <div class="paper-canvas-wrapper" id="paper-workspace">
-              <!-- Grid background is loaded dynamically based on select option -->
+              <!-- Layered canvases for separating base PDF backgrounds from user pencil strokes -->
+              <canvas id="bg-canvas" width="1200" height="1600"></canvas>
               <canvas id="paint-canvas" width="1200" height="1600"></canvas>
               <!-- Interactive Text blocks will be inserted here dynamically -->
             </div>
@@ -448,6 +489,16 @@
         <button class="modal-close-btn" id="btn-close-notebook-modal">&times;</button>
       </div>
       <div class="modal-body">
+        <!-- PDF Import Option (¡Nuevo! 📄) -->
+        <div class="input-group" style="background-color: var(--color-primary-light); padding: 14px; border-radius: var(--cozy-border-radius-md); border: 1px dashed var(--color-primary); margin-bottom: 20px; text-align: center; box-sizing: border-box; width: 100%;">
+          <label style="font-weight: 700; color: var(--color-primary-dark); display: block; margin-bottom: 4px;"><i class="fa-solid fa-file-pdf"></i> ¿Tienes un PDF de estudio?</label>
+          <p style="font-size: 0.75rem; color: var(--color-text-muted); margin-bottom: 10px; line-height: 1.4;">Importa un PDF para escribir, subrayar y anotar encima. ¡Se creará una libreta automáticamente con cada página!</p>
+          <button class="btn btn-secondary btn-block btn-sm" id="btn-trigger-pdf-import" type="button" style="display: inline-flex; justify-content: center; align-items: center; gap: 6px; width: auto; padding: 6px 16px; font-weight: 700; cursor: pointer; margin: 0 auto;">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Seleccionar PDF
+          </button>
+          <input type="file" id="notebook-pdf-input" accept="application/pdf" style="display: none;">
+        </div>
+
         <div class="input-group">
           <label for="notebook-name">Título de la Libreta</label>
           <input type="text" id="notebook-name" placeholder="Ej: Física II, Cálculo, Historia..." class="cozy-input">
@@ -597,6 +648,43 @@
         <button class="btn btn-secondary" id="btn-cancel-camera-modal">Cancelar</button>
         <button class="btn btn-primary btn-circle" id="btn-capture-photo" style="width: 50px; height: 50px;" title="Capturar Foto">
           <i class="fa-solid fa-camera" style="font-size: 1.3rem;"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Exit Button for Full Canvas Mode (Solo Hoja) -->
+  <button class="btn btn-circle btn-secondary floating-exit-fullscreen hidden" id="btn-exit-fullscreen" title="Salir de Solo Hoja" style="position: fixed; top: 16px; right: 16px; z-index: 10000; box-shadow: var(--cozy-shadow-md); background-color: var(--bg-card); border: var(--cozy-border-width) solid var(--color-border); cursor: pointer; display: none;">
+    <i class="fa-solid fa-compress" style="font-size: 1.1rem;"></i>
+  </button>
+
+  <!-- Floating Action Button for Flashcards on Mobile -->
+  <button class="btn btn-circle btn-accent mobile-cards-fab" id="btn-mobile-cards-fab" title="Ver Tarjetas" style="position: fixed; bottom: 20px; right: 20px; z-index: 998; box-shadow: var(--cozy-shadow-md); display: none; width: 52px; height: 52px; border: var(--cozy-border-width) solid var(--color-border); cursor: pointer;">
+    <i class="fa-solid fa-brain" style="font-size: 1.3rem;"></i>
+    <span class="fab-badge" id="mobile-cards-badge" style="position: absolute; top: -4px; right: -4px; background-color: var(--color-danger); color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg-card);">0</span>
+  </button>
+
+  <!-- Mobile Bottom Sheet for Notebook Flashcards -->
+  <div class="mobile-bottom-sheet hidden" id="mobile-cards-sheet" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 2100; pointer-events: none; display: none; flex-direction: column; justify-content: flex-end;">
+    <div class="sheet-backdrop" id="sheet-backdrop" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(2px); pointer-events: auto; opacity: 0; transition: opacity 0.3s ease;"></div>
+    <div class="sheet-content" style="position: relative; background: var(--bg-sidebar); border-top: var(--cozy-border-width) solid var(--color-border); border-top-left-radius: var(--cozy-border-radius-lg); border-top-right-radius: var(--cozy-border-radius-lg); max-height: 70vh; pointer-events: auto; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; padding: 16px 20px 24px 20px; box-shadow: 0 -8px 30px rgba(0,0,0,0.15);">
+      <div class="sheet-drag-handle" style="width: 100%; display: flex; justify-content: center; padding-bottom: 12px; cursor: grab;">
+        <span class="drag-bar" style="width: 40px; height: 4px; background-color: var(--color-border); border-radius: 2px;"></span>
+      </div>
+      <div class="sheet-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--color-border); padding-bottom: 12px;">
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--color-primary-dark); margin: 0;"><i class="fa-solid fa-brain"></i> Tarjetas de Estudio</h3>
+        <button class="btn btn-accent btn-sm" id="btn-add-sheet-flashcard" style="padding: 6px 12px; font-size: 0.8rem; font-weight: 700;">
+          <i class="fa-solid fa-plus"></i> Añadir Tarjeta
+        </button>
+      </div>
+      <div class="sheet-body" style="flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
+        <div class="study-sidebar-list" id="mobile-flashcards-list">
+          <!-- Dinámicamente cargados -->
+        </div>
+      </div>
+      <div class="sheet-footer">
+        <button class="btn btn-primary btn-block" id="btn-study-this-notebook-mobile" style="padding: 12px; font-weight: 700; font-size: 0.95rem;">
+          <i class="fa-solid fa-graduation-cap"></i> Repasar este cuaderno
         </button>
       </div>
     </div>

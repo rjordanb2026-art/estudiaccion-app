@@ -12,6 +12,7 @@ class CozyApp {
     this.initThemeSwitcher();
     this.initMobileSidebar();
     this.renderBookshelf();
+    this.initFullscreenAndBottomSheet();
   }
 
   // Mobile sidebar navigation toggler
@@ -104,6 +105,23 @@ class CozyApp {
       document.getElementById('btn-tab-bookshelf').classList.add('active');
     });
 
+    // Delete active notebook button inside Canvas Editor header
+    const btnDeleteActive = document.getElementById('btn-delete-active-notebook');
+    if (btnDeleteActive) {
+      btnDeleteActive.addEventListener('click', () => {
+        if (this.activeNotebookId) {
+          const notebook = stateManager.getNotebook(this.activeNotebookId);
+          const name = notebook ? notebook.title : 'este cuaderno';
+          if (confirm(`¿Estás seguro de que deseas eliminar el cuaderno "${name}" por completo? Esta acción eliminará permanentemente todos sus apuntes, textos, imágenes y tarjetas.`)) {
+            stateManager.deleteNotebook(this.activeNotebookId);
+            this.switchTab('bookshelf-tab');
+            document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+            document.getElementById('btn-tab-bookshelf').classList.add('active');
+          }
+        }
+      });
+    }
+
     // Study notebook button inside Canvas Editor
     document.getElementById('btn-study-this-notebook').addEventListener('click', () => {
       if (this.activeNotebookId) {
@@ -129,6 +147,16 @@ class CozyApp {
     const activePanel = document.getElementById(tabId);
     if (activePanel) {
       activePanel.classList.add('active');
+    }
+
+    // Handle mobile FAB and fullscreen toggling responsively
+    if (tabId === 'notebook-viewer-tab') {
+      document.body.classList.add('show-mobile-fab');
+    } else {
+      document.body.classList.remove('show-mobile-fab');
+      document.body.classList.remove('fullscreen-canvas-mode');
+      const sheet = document.getElementById('mobile-cards-sheet');
+      if (sheet) sheet.classList.remove('open');
     }
 
     // Trigger specific component initializers
@@ -177,6 +205,11 @@ class CozyApp {
 
       card.innerHTML = `
         <div class="notebook-book" style="background-color: ${notebook.coverColor};">
+          <div class="notebook-book-delete-wrapper">
+             <button class="notebook-delete-btn" title="Eliminar este cuaderno" data-id="${notebook.id}">
+                <i class="fa-solid fa-trash-can"></i>
+             </button>
+          </div>
           <div class="notebook-book-icon">${notebook.icon || '📝'}</div>
           <div class="notebook-book-details">
             <h4 class="notebook-book-title">${notebook.title}</h4>
@@ -188,6 +221,18 @@ class CozyApp {
           <p class="notebook-card-meta">${flashcardsCount} ${flashcardsCount === 1 ? 'tarjeta' : 'tarjetas'}</p>
         </div>
       `;
+
+      // Cover Quick Delete action
+      const deleteBtn = card.querySelector('.notebook-delete-btn');
+      if (deleteBtn) {
+        deleteBtn.addEventListener('click', (e) => {
+          e.stopPropagation(); // Avoids opening the notebook!
+          if (confirm(`¿Estás seguro de que deseas eliminar el cuaderno "${notebook.title}" por completo? Esta acción es irreversible.`)) {
+            stateManager.deleteNotebook(notebook.id);
+            this.renderBookshelf();
+          }
+        });
+      }
 
       // Open notebook action
       card.addEventListener('click', () => {
@@ -232,6 +277,7 @@ class CozyApp {
     }
 
     this.renderNotebookSidebarFlashcards();
+    this.renderMobileSidebarFlashcards();
   }
 
   // List notebook flashcards on the canvas editor sidebar
@@ -241,6 +287,10 @@ class CozyApp {
 
     list.innerHTML = '';
     const notebook = stateManager.getNotebook(this.activeNotebookId);
+    
+    // Also sync the mobile sidebar cards
+    this.renderMobileSidebarFlashcards();
+
     if (!notebook || !notebook.flashcards || notebook.flashcards.length === 0) {
       list.innerHTML = `
         <div style="text-align: center; color: var(--color-text-muted); font-size: 0.8rem; padding: 20px 0;">
@@ -282,6 +332,22 @@ class CozyApp {
     btnOpen.addEventListener('click', openModal);
     btnClose.addEventListener('click', closeModal);
     btnCancel.addEventListener('click', closeModal);
+
+    // PDF file input trigger
+    const btnTriggerPdf = modal.querySelector('#btn-trigger-pdf-import');
+    const pdfInput = modal.querySelector('#notebook-pdf-input');
+    if (btnTriggerPdf && pdfInput) {
+      btnTriggerPdf.addEventListener('click', () => {
+        pdfInput.click();
+      });
+      pdfInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file && window.cozyCanvas) {
+          window.cozyCanvas.importPDFFile(file);
+        }
+        pdfInput.value = ''; // Reset file input
+      });
+    }
 
     // Cover color selection
     const colorSelectors = modal.querySelectorAll('.cover-selector-btn');
@@ -416,6 +482,152 @@ class CozyApp {
       opt.value = n.id;
       opt.innerText = n.title;
       select.appendChild(opt);
+    });
+  }
+
+  initFullscreenAndBottomSheet() {
+    const btnEnter = document.getElementById('btn-enter-fullscreen');
+    const btnExit = document.getElementById('btn-exit-fullscreen');
+    const btnFab = document.getElementById('btn-mobile-cards-fab');
+    const sheet = document.getElementById('mobile-cards-sheet');
+    const backdrop = document.getElementById('sheet-backdrop');
+    const btnAddSheetCard = document.getElementById('btn-add-sheet-flashcard');
+    const btnStudyMobile = document.getElementById('btn-study-this-notebook-mobile');
+    const dragHandle = sheet ? sheet.querySelector('.sheet-drag-handle') : null;
+    const btnExportPdf = document.getElementById('btn-export-pdf');
+
+    // --- PDF EXPORT BINDING ---
+    if (btnExportPdf) {
+      btnExportPdf.addEventListener('click', () => {
+        if (window.cozyCanvas) {
+          window.cozyCanvas.exportActiveNotebookAsPDF();
+        }
+      });
+    }
+
+    // --- FULLSCREEN CANVAS MODE (SOLO HOJA) ---
+    if (btnEnter) {
+      btnEnter.addEventListener('click', () => {
+        document.body.classList.add('fullscreen-canvas-mode');
+        if (window.cozyCanvas) {
+          window.cozyCanvas.adjustScale();
+        }
+      });
+    }
+
+    if (btnExit) {
+      btnExit.addEventListener('click', () => {
+        document.body.classList.remove('fullscreen-canvas-mode');
+        if (window.cozyCanvas) {
+          window.cozyCanvas.adjustScale();
+        }
+      });
+    }
+
+    // --- BOTTOM SHEET MOBILE EVENTS ---
+    if (btnFab && sheet) {
+      btnFab.addEventListener('click', () => {
+        sheet.classList.remove('hidden');
+        sheet.classList.add('open');
+        this.renderMobileSidebarFlashcards();
+      });
+    }
+
+    const closeSheet = () => {
+      if (sheet) {
+        sheet.classList.remove('open');
+      }
+    };
+
+    if (backdrop) {
+      backdrop.addEventListener('click', closeSheet);
+    }
+
+    // Touch Swipe Down gesture to dismiss bottom sheet (premium micro-interaction!)
+    if (dragHandle && sheet) {
+      let startY = 0;
+      let currentY = 0;
+      const content = sheet.querySelector('.sheet-content');
+
+      dragHandle.addEventListener('touchstart', (e) => {
+        startY = e.touches[0].clientY;
+        dragHandle.style.cursor = 'grabbing';
+      });
+
+      dragHandle.addEventListener('touchmove', (e) => {
+        currentY = e.touches[0].clientY;
+        const diff = currentY - startY;
+        if (diff > 0 && content) {
+          content.style.transform = `translateY(${diff}px)`;
+          content.style.transition = 'none';
+        }
+      });
+
+      dragHandle.addEventListener('touchend', (e) => {
+        dragHandle.style.cursor = 'grab';
+        const diff = currentY - startY;
+        if (content) {
+          content.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+          if (diff > 120) {
+            closeSheet();
+          }
+          content.style.transform = '';
+        }
+        startY = 0;
+        currentY = 0;
+      });
+    }
+
+    // Mobile Bottom Sheet Actions
+    if (btnAddSheetCard) {
+      btnAddSheetCard.addEventListener('click', () => {
+        closeSheet();
+        const btnAddOriginal = document.getElementById('btn-add-notebook-flashcard');
+        if (btnAddOriginal) btnAddOriginal.click();
+      });
+    }
+
+    if (btnStudyMobile) {
+      btnStudyMobile.addEventListener('click', () => {
+        closeSheet();
+        const btnStudyOriginal = document.getElementById('btn-study-this-notebook');
+        if (btnStudyOriginal) btnStudyOriginal.click();
+      });
+    }
+  }
+
+  renderMobileSidebarFlashcards() {
+    const list = document.getElementById('mobile-flashcards-list');
+    if (!list) return;
+
+    list.innerHTML = '';
+    const notebook = stateManager.getNotebook(this.activeNotebookId);
+    
+    // Update FAB Badge count
+    const badge = document.getElementById('mobile-cards-badge');
+    const count = notebook && notebook.flashcards ? notebook.flashcards.length : 0;
+    if (badge) {
+      badge.innerText = count;
+    }
+
+    if (!notebook || !notebook.flashcards || notebook.flashcards.length === 0) {
+      list.innerHTML = `
+        <div style="text-align: center; color: var(--color-text-muted); font-size: 0.85rem; padding: 30px 0;">
+          Ninguna tarjeta de estudio creada. ¡Agrega una para repasar! 💡
+        </div>
+      `;
+      return;
+    }
+
+    notebook.flashcards.forEach(c => {
+      const item = document.createElement('div');
+      item.className = 'sidebar-card-item';
+      item.style.marginBottom = '8px';
+      item.innerHTML = `
+        <div class="sidebar-card-q" style="font-weight: 700; color: var(--color-primary-dark);">${c.front}</div>
+        <div class="sidebar-card-a" style="color: var(--color-text-muted); font-style: italic; margin-top: 4px;">${c.back}</div>
+      `;
+      list.appendChild(item);
     });
   }
 }

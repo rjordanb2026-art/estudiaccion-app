@@ -530,6 +530,10 @@ body {
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Hover Animado */
@@ -772,6 +776,17 @@ body {
   background-size: 100% 28px;
 }
 
+#bg-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 1200px !important;
+  height: 1600px !important;
+  z-index: 5; /* Behind paint-canvas (8) and above paper backgrounds */
+  pointer-events: none; /* Let pointer events pass straight through to paint-canvas! */
+}
+
 #paint-canvas {
   position: absolute;
   top: 0;
@@ -783,11 +798,11 @@ body {
   z-index: 8; /* Pencil tool is default, sitting above images (6) and below text (10) */
 }
 
-.canvas-scroll-container.tool-hand, .canvas-scroll-container.tool-hand #paint-canvas {
+.canvas-scroll-container.tool-hand, .canvas-scroll-container.tool-hand #paint-canvas, .canvas-scroll-container.tool-hand #bg-canvas {
   cursor: grab !important;
 }
 
-.canvas-scroll-container.tool-hand:active, .canvas-scroll-container.tool-hand:active #paint-canvas {
+.canvas-scroll-container.tool-hand:active, .canvas-scroll-container.tool-hand:active #paint-canvas, .canvas-scroll-container.tool-hand:active #bg-canvas {
   cursor: grabbing !important;
 }
 
@@ -2289,6 +2304,7 @@ body.brutalist-theme .bookshelf-shelf-decorator {
     flex-grow: 1 !important;
     padding: 6px !important;
     border-radius: var(--cozy-border-radius-md) !important;
+    overflow: hidden !important; /* Locks scrolling for stable canvas drawing on mobile */
   }
 
   /* Hide flashcards sidebar on mobile to gain huge drawing space */
@@ -2338,3 +2354,152 @@ body.brutalist-theme .bookshelf-shelf-decorator {
     width: 95vw;
   }
 }
+
+/* ==========================================================================
+   12. NUEVAS FUNCIONALIDADES: DIAGRAMAS, SOLO HOJA Y BOTTOM SHEET MÓVIL
+   ========================================================================== */
+
+/* --- SHAPE SELECTOR TOOLBAR --- */
+.shape-selector-dropdown {
+  display: none;
+}
+.shape-selector-dropdown.active {
+  display: flex !important;
+}
+.shape-opt {
+  background: transparent;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  color: var(--color-text-dark);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--cozy-border-radius-sm);
+  transition: var(--transition-smooth);
+}
+.shape-opt:hover {
+  background-color: rgba(223, 215, 205, 0.4) !important;
+}
+.shape-opt.active {
+  background-color: var(--color-primary) !important;
+  color: white !important;
+}
+
+/* --- FULLSCREEN CANVAS MODE (SOLO HOJA) --- */
+.fullscreen-canvas-mode .app-sidebar,
+.fullscreen-canvas-mode .notebook-viewer-header,
+.fullscreen-canvas-mode .mobile-top-bar,
+.fullscreen-canvas-mode .canvas-toolbar {
+  display: none !important;
+}
+
+.fullscreen-canvas-mode .app-main-content {
+  padding: 0 !important;
+  height: 100vh !important;
+  margin: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+.fullscreen-canvas-mode .hybrid-workspace-container {
+  height: 100vh !important;
+  gap: 0 !important;
+}
+
+.fullscreen-canvas-mode .canvas-scroll-container {
+  height: 100vh !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  background-color: #E2DDD5 !important; /* Cozy desk background */
+}
+
+/* Exit Fullscreen Floating Button */
+.floating-exit-fullscreen {
+  transition: var(--transition-smooth);
+  opacity: 0.6;
+  display: none;
+}
+.floating-exit-fullscreen:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+.fullscreen-canvas-mode .floating-exit-fullscreen {
+  display: flex !important;
+}
+
+/* --- MOBILE BOTTOM SHEET & FAB --- */
+.mobile-cards-fab {
+  display: none;
+  transition: var(--transition-smooth);
+}
+.mobile-cards-fab:hover {
+  transform: translateY(-2px);
+}
+
+.mobile-bottom-sheet {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* Show FAB only when viewing notebook viewer active tab */
+  body.show-mobile-fab .mobile-cards-fab {
+    display: flex !important;
+  }
+  
+  .mobile-bottom-sheet {
+    display: flex !important;
+  }
+  
+  .mobile-bottom-sheet.open {
+    pointer-events: auto !important;
+  }
+  
+  .mobile-bottom-sheet.open .sheet-backdrop {
+    opacity: 1 !important;
+  }
+  
+  .mobile-bottom-sheet.open .sheet-content {
+    transform: translateY(0) !important;
+  }
+}
+
+/* Quick delete button on bookshelf notebook card covers */
+.notebook-book-delete-wrapper {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 15;
+  opacity: 0;
+  pointer-events: auto;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.notebook-card:hover .notebook-book-delete-wrapper {
+  opacity: 1;
+}
+
+.notebook-delete-btn {
+  background: rgba(214, 122, 108, 0.95);
+  color: white;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--cozy-shadow-sm);
+  transition: var(--transition-smooth);
+}
+
+.notebook-delete-btn:hover {
+  background: var(--color-danger) !important;
+  transform: scale(1.15) !important;
+}
+
+
