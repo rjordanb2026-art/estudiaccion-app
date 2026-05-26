@@ -83,6 +83,7 @@ class CozyCanvas {
       this.workspace.style.transformOrigin = '';
       if (scaler) {
         scaler.style.height = '1600px';
+      }
     }
   }
 
