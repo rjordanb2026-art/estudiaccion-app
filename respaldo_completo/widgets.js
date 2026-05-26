@@ -140,7 +140,6 @@ class CozyWidgets {
     this.rainNode = null;
     this.fireNode = null;
     this.cafeNode = null;
-    this.windNode = null;
     this.brownNode = null;
 
     // DOM sliders & status
@@ -148,7 +147,6 @@ class CozyWidgets {
       rain: document.getElementById('vol-rain'),
       cafe: document.getElementById('vol-cafe'),
       fire: document.getElementById('vol-fire'),
-      wind: document.getElementById('vol-wind'),
       brown: document.getElementById('vol-brown'),
     };
 
@@ -224,39 +222,122 @@ class CozyWidgets {
     
     this.rainFilter = ctx.createBiquadFilter();
     this.rainFilter.type = 'lowpass';
-    this.rainFilter.frequency.value = 800;
+    this.rainFilter.frequency.value = 1100; // Distant steady rain
+
+    this.rainHighpass = ctx.createBiquadFilter();
+    this.rainHighpass.type = 'highpass';
+    this.rainHighpass.frequency.value = 150; // Filter muddy rumble
     
     this.rainVolume.connect(this.rainFilter);
-    this.rainFilter.connect(ctx.destination);
+    this.rainFilter.connect(this.rainHighpass);
+    this.rainHighpass.connect(ctx.destination);
     createNoiseSource(this.rainVolume);
+
+    // Periodic random raindrop crackles (high-fidelity organic rain details)
+    setInterval(() => {
+      if (this.rainVolume.gain.value > 0.01) {
+        const now = ctx.currentTime;
+        const count = 2 + Math.floor(Math.random() * 4); // 2 to 5 droplets per tick
+        for (let d = 0; d < count; d++) {
+          const delay = Math.random() * 0.18;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          
+          osc.type = 'sine';
+          const startFreq = 1400 + Math.random() * 900;
+          osc.frequency.setValueAtTime(startFreq, now + delay);
+          osc.frequency.exponentialRampToValueAtTime(180 + Math.random() * 120, now + delay + 0.035);
+          
+          gain.gain.setValueAtTime(0, now + delay);
+          gain.gain.linearRampToValueAtTime(0.0035 * this.rainVolume.gain.value, now + delay + 0.002);
+          gain.gain.exponentialRampToValueAtTime(0.00001, now + delay + 0.035);
+          
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.value = 1200 + Math.random() * 600;
+          filter.Q.value = 1.5;
+          
+          osc.connect(gain);
+          gain.connect(filter);
+          filter.connect(ctx.destination);
+          osc.start(now + delay);
+          osc.stop(now + delay + 0.04);
+        }
+      }
+    }, 150);
 
     // 2. CAFE SYNTH
     this.cafeVolume = ctx.createGain();
     this.cafeVolume.gain.value = 0;
 
     this.cafeFilter = ctx.createBiquadFilter();
-    this.cafeFilter.type = 'bandpass';
-    this.cafeFilter.frequency.value = 250;
-    this.cafeFilter.Q.value = 0.8;
+    this.cafeFilter.type = 'lowpass';
+    this.cafeFilter.frequency.value = 160; // Deep low-frequency restaurant room hum
 
     this.cafeVolume.connect(this.cafeFilter);
     this.cafeFilter.connect(ctx.destination);
     createNoiseSource(this.cafeVolume);
 
-    // Randomized clinks in cafe
+    // 2b. Procedural tranquil background murmurs (warm distant voices, unintelligible)
     setInterval(() => {
       if (this.cafeVolume.gain.value > 0.01) {
+        const now = ctx.currentTime;
+        const count = 1 + Math.floor(Math.random() * 2); // 1 or 2 voice ripples
+        
+        for (let v = 0; v < count; v++) {
+          const delay = Math.random() * 0.4;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          
+          osc.type = 'triangle';
+          const baseFreq = 160 + Math.random() * 100;
+          osc.frequency.setValueAtTime(baseFreq, now + delay);
+          // Gently modulate vowel frequencies to sound like human vocal inflection
+          osc.frequency.linearRampToValueAtTime(baseFreq + (Math.random() * 40 - 20), now + delay + 1.2);
+          
+          gain.gain.setValueAtTime(0, now + delay);
+          gain.gain.linearRampToValueAtTime(0.01 * this.cafeVolume.gain.value, now + delay + 0.3);
+          gain.gain.linearRampToValueAtTime(0, now + delay + 1.2);
+          
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.value = 240 + Math.random() * 80;
+          filter.Q.value = 3.5; // Resonant vocal vowel formant filter
+          
+          osc.connect(gain);
+          gain.connect(filter);
+          filter.connect(ctx.destination);
+          osc.start(now + delay);
+          osc.stop(now + delay + 1.3);
+        }
+      }
+    }, 1100);
+
+    // 2c. Soft cup & spoon clinks (tranquil coffee shop texture)
+    setInterval(() => {
+      if (this.cafeVolume.gain.value > 0.01 && Math.random() > 0.4) {
+        const now = ctx.currentTime;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        osc.frequency.setValueAtTime(1500 + Math.random() * 800, ctx.currentTime);
-        gain.gain.setValueAtTime(0.01 * this.cafeVolume.gain.value, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.3);
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(2100 + Math.random() * 1100, now);
+        
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.007 * this.cafeVolume.gain.value, now + 0.006);
+        gain.gain.exponentialRampToValueAtTime(0.00001, now + 0.28);
+        
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'highpass';
+        filter.frequency.value = 1600;
+        
         osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.3);
+        gain.connect(filter);
+        filter.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.3);
       }
-    }, 4000);
+    }, 3400);
 
     // 3. FIRE SYNTH
     this.fireVolume = ctx.createGain();
@@ -264,58 +345,66 @@ class CozyWidgets {
 
     this.fireFilter = ctx.createBiquadFilter();
     this.fireFilter.type = 'lowpass';
-    this.fireFilter.frequency.value = 400;
+    this.fireFilter.frequency.value = 160; // Deep warm roaring flame background
 
     this.fireVolume.connect(this.fireFilter);
     this.fireFilter.connect(ctx.destination);
     createNoiseSource(this.fireVolume);
 
-    // Random spark crackles
+    // wood pops and spark crackles (dynamic, organic fireplace fire)
     setInterval(() => {
       if (this.fireVolume.gain.value > 0.01) {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(100 + Math.random() * 200, ctx.currentTime);
-        gain.gain.setValueAtTime(0.04 * this.fireVolume.gain.value, ctx.currentTime);
-        gain.gain.setValueAtTime(0.1 * this.fireVolume.gain.value, ctx.currentTime + 0.005);
-        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.015);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.02);
-      }
-    }, 450);
-
-    // 4. WIND SYNTH (Cozy sweeping breeze)
-    this.windVolume = ctx.createGain();
-    this.windVolume.gain.value = 0;
-
-    this.windFilter = ctx.createBiquadFilter();
-    this.windFilter.type = 'lowpass';
-    this.windFilter.frequency.value = 350;
-
-    this.windVolume.connect(this.windFilter);
-    this.windFilter.connect(ctx.destination);
-    createNoiseSource(this.windVolume);
-
-    // Dynamic wind sweep interval
-    setInterval(() => {
-      if (this.windVolume.gain.value > 0.01) {
         const now = ctx.currentTime;
-        const targetFreq = 160 + Math.random() * 320;
-        this.windFilter.frequency.exponentialRampToValueAtTime(targetFreq, now + 3.0);
+        
+        // 3b. Tiny wood crackles/sparks (random, high-pitched snaps)
+        if (Math.random() > 0.35) {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(1800 + Math.random() * 3500, now);
+          
+          gain.gain.setValueAtTime(0.022 * this.fireVolume.gain.value, now);
+          gain.gain.exponentialRampToValueAtTime(0.00001, now + 0.009);
+          
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.012);
+        }
+        
+        // 3c. Deep organic fireplace wood pops (combustion pops)
+        if (Math.random() > 0.88) {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(160 + Math.random() * 140, now);
+          osc.frequency.exponentialRampToValueAtTime(35, now + 0.035);
+          
+          gain.gain.setValueAtTime(0, now);
+          gain.gain.linearRampToValueAtTime(0.065 * this.fireVolume.gain.value, now + 0.002);
+          gain.gain.exponentialRampToValueAtTime(0.00001, now + 0.038);
+          
+          const popFilter = ctx.createBiquadFilter();
+          popFilter.type = 'lowpass';
+          popFilter.frequency.value = 350;
+          
+          osc.connect(gain);
+          gain.connect(popFilter);
+          popFilter.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.045);
+        }
       }
-    }, 3000);
+    }, 140);
 
-    // 5. DEEP BROWN NOISE SYNTH
+    // 4. DEEP BROWN NOISE SYNTH (High-Fidelity Acoustic Sound Masking & Focus)
     const brownBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const brownData = brownBuffer.getChannelData(0);
     let accumulator = 0.0;
     for (let i = 0; i < bufferSize; i++) {
       const white = Math.random() * 2 - 1;
-      accumulator = (accumulator + (0.02 * white)) / 1.002;
-      brownData[i] = accumulator * 3.0;
+      accumulator = (accumulator + (0.015 * white)) / 1.004;
+      brownData[i] = accumulator * 4.2;
     }
 
     const createBrownNoiseSource = (volNode) => {
@@ -332,7 +421,7 @@ class CozyWidgets {
 
     this.brownFilter = ctx.createBiquadFilter();
     this.brownFilter.type = 'lowpass';
-    this.brownFilter.frequency.value = 200; // Deep water-like roar
+    this.brownFilter.frequency.value = 135; // Softest, deep waterfall hum for anxiety, focus and ADHD shielding
 
     this.brownVolume.connect(this.brownFilter);
     this.brownFilter.connect(ctx.destination);
@@ -348,8 +437,6 @@ class CozyWidgets {
       this.cafeVolume.gain.setTargetAtTime(value * 0.3, now, 0.2);
     } else if (sound === 'fire' && this.fireVolume) {
       this.fireVolume.gain.setTargetAtTime(value * 0.35, now, 0.2);
-    } else if (sound === 'wind' && this.windVolume) {
-      this.windVolume.gain.setTargetAtTime(value * 0.45, now, 0.2);
     } else if (sound === 'brown' && this.brownVolume) {
       this.brownVolume.gain.setTargetAtTime(value * 0.5, now, 0.2);
     }

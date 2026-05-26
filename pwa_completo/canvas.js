@@ -37,10 +37,70 @@ class CozyCanvas {
     this.canvas.classList.add('tool-hand');
     this.scrollContainer.classList.add('tool-hand');
 
+    // Scale wrapper setup & dynamic resize observer for vertical responsive sheet
+    this.initScaleWrapper();
+    this.adjustScale();
+    window.addEventListener('resize', () => this.adjustScale());
+
     this.initCanvasEvents();
     this.initToolbarEvents();
     this.initKeyboardEvents();
     this.initCameraEvents();
+  }
+
+  initScaleWrapper() {
+    if (!this.workspace || !this.scrollContainer) return;
+    let scaler = this.scrollContainer.querySelector('.paper-scaler-wrapper');
+    if (!scaler) {
+      scaler = document.createElement('div');
+      scaler.className = 'paper-scaler-wrapper';
+      this.workspace.parentNode.insertBefore(scaler, this.workspace);
+      scaler.appendChild(this.workspace);
+    }
+  }
+
+  adjustScale() {
+    if (!this.scrollContainer || !this.workspace) return;
+    
+    // Get actual width inside scroll container (minus 32px padding)
+    const padding = 32;
+    const availableWidth = this.scrollContainer.clientWidth - padding;
+    const baseWidth = 1200;
+    
+    let scaler = this.scrollContainer.querySelector('.paper-scaler-wrapper');
+    
+    if (availableWidth < baseWidth) {
+      const scale = availableWidth / baseWidth;
+      this.workspace.style.transform = `scale(${scale})`;
+      this.workspace.style.transformOrigin = 'top center';
+      
+      const scaledHeight = 1600 * scale;
+      if (scaler) {
+        scaler.style.height = `${scaledHeight}px`;
+      }
+    } else {
+      this.workspace.style.transform = 'none';
+      this.workspace.style.transformOrigin = '';
+      if (scaler) {
+        scaler.style.height = '1600px';
+    }
+  }
+
+  getCenterCoordinates() {
+    if (!this.workspace || !this.scrollContainer) return { x: 600, y: 800 };
+    const rect = this.workspace.getBoundingClientRect();
+    const scaleX = 1200 / rect.width;
+    const scaleY = 1600 / rect.height;
+    
+    // Find visual center of the scroll container relative to container top-left
+    const visualCenterX = this.scrollContainer.scrollLeft + (this.scrollContainer.clientWidth / 2);
+    const visualCenterY = this.scrollContainer.scrollTop + (this.scrollContainer.clientHeight / 2);
+    
+    // Convert visual scroll coordinate to internal 1200x1600 workspace base coordinates
+    const baseX = visualCenterX * scaleX;
+    const baseY = visualCenterY * scaleY;
+    
+    return { x: baseX, y: baseY };
   }
 
   // Bind all canvas drawing, mouse, touch, and double-click actions
@@ -158,8 +218,8 @@ class CozyCanvas {
     this.workspace.addEventListener('dblclick', (e) => {
       if (e.target.closest('.notion-text-block-container, .notion-image-block-container')) return;
       const rect = this.workspace.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      const x = (e.clientX - rect.left) * (1200 / rect.width);
+      const y = (e.clientY - rect.top) * (1600 / rect.height);
       this.createTextBlock(x, y, '');
     });
   }
@@ -227,9 +287,8 @@ class CozyCanvas {
           const reader = new FileReader();
           reader.onload = (event) => {
             const base64Src = event.target.result;
-            const scrollX = this.scrollContainer.scrollLeft + 150;
-            const scrollY = this.scrollContainer.scrollTop + 150;
-            this.createImageBlock(scrollX, scrollY, base64Src);
+            const center = this.getCenterCoordinates();
+            this.createImageBlock(center.x - 140, center.y - 100, base64Src);
           };
           reader.readAsDataURL(file);
           e.preventDefault(); // Stop default paste
@@ -242,9 +301,8 @@ class CozyCanvas {
       if (!hasImage && !isEditable) {
         const pastedText = (e.clipboardData || window.clipboardData).getData('text');
         if (pastedText && pastedText.trim() !== '') {
-          const scrollX = this.scrollContainer.scrollLeft + 150;
-          const scrollY = this.scrollContainer.scrollTop + 150;
-          this.createTextBlock(scrollX, scrollY, pastedText.trim());
+          const center = this.getCenterCoordinates();
+          this.createTextBlock(center.x - 100, center.y - 40, pastedText.trim());
           e.preventDefault();
         }
       }
@@ -331,11 +389,9 @@ class CozyCanvas {
 
         const dataUrl = captureCanvas.toDataURL('image/jpeg');
 
-        // Center relative to scroll
-        const scrollX = this.scrollContainer.scrollLeft + 150;
-        const scrollY = this.scrollContainer.scrollTop + 150;
-
-        this.createImageBlock(scrollX, scrollY, dataUrl);
+        // Center relative to scroll using scaled coordinate system
+        const center = this.getCenterCoordinates();
+        this.createImageBlock(center.x - 140, center.y - 100, dataUrl);
 
         closeCamera();
       });
@@ -428,10 +484,9 @@ class CozyCanvas {
           const reader = new FileReader();
           reader.onload = (event) => {
             const base64Src = event.target.result;
-            // Center the image relative to current viewport scroll
-            const scrollX = this.scrollContainer.scrollLeft + 150;
-            const scrollY = this.scrollContainer.scrollTop + 150;
-            this.createImageBlock(scrollX, scrollY, base64Src);
+            // Center relative to scroll using scaled coordinate system
+            const center = this.getCenterCoordinates();
+            this.createImageBlock(center.x - 140, center.y - 100, base64Src);
           };
           reader.readAsDataURL(file);
         }
@@ -460,6 +515,8 @@ class CozyCanvas {
         btn.classList.remove('active');
       }
     });
+
+    this.adjustScale();
 
     const notebook = stateManager.getNotebook(id);
     if (!notebook) return;
@@ -529,8 +586,8 @@ class CozyCanvas {
     // 2. TEXT TOOL: Click to instantly insert a block
     if (this.currentTool === 'text') {
       const rect = this.workspace.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      const x = (e.clientX - rect.left) * (1200 / rect.width);
+      const y = (e.clientY - rect.top) * (1600 / rect.height);
       this.createTextBlock(x, y, '');
       return;
     }
@@ -762,8 +819,11 @@ class CozyCanvas {
         pos3 = e.clientX;
         pos4 = e.clientY;
         
-        elem.style.left = (elem.offsetLeft - pos1) + "px";
-        elem.style.top = (elem.offsetTop - pos2) + "px";
+        const rect = this.workspace.getBoundingClientRect();
+        const scale = rect.width / 1200;
+        
+        elem.style.left = (elem.offsetLeft - (pos1 / scale)) + "px";
+        elem.style.top = (elem.offsetTop - (pos2 / scale)) + "px";
       };
     };
   }
@@ -856,8 +916,11 @@ class CozyCanvas {
         pos3 = e.clientX;
         pos4 = e.clientY;
         
-        elem.style.left = (elem.offsetLeft - pos1) + "px";
-        elem.style.top = (elem.offsetTop - pos2) + "px";
+        const rect = this.workspace.getBoundingClientRect();
+        const scale = rect.width / 1200;
+        
+        elem.style.left = (elem.offsetLeft - (pos1 / scale)) + "px";
+        elem.style.top = (elem.offsetTop - (pos2 / scale)) + "px";
       };
     };
   }
@@ -886,8 +949,12 @@ class CozyCanvas {
       document.onmousemove = (e) => {
         e = e || window.event;
         e.preventDefault();
-        const newWidth = Math.max(100, startWidth + (e.clientX - startX));
-        const newHeight = Math.max(80, startHeight + (e.clientY - startY));
+        
+        const rect = this.workspace.getBoundingClientRect();
+        const scale = rect.width / 1200;
+        
+        const newWidth = Math.max(100, startWidth + ((e.clientX - startX) / scale));
+        const newHeight = Math.max(80, startHeight + ((e.clientY - startY) / scale));
         elem.style.width = newWidth + 'px';
         elem.style.height = newHeight + 'px';
       };

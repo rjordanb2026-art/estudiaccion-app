@@ -727,10 +727,11 @@ body {
   overflow: hidden;
 }
 
-/* Contenedor del lienzo con scroll */
+/* Contenedor del lienzo con scroll - Hoja Estática Vertical */
 .canvas-scroll-container {
   flex-grow: 1;
-  overflow: auto;
+  overflow-x: hidden !important; /* Block horizontal scrolling completely */
+  overflow-y: auto !important; /* Only vertical scrolling allowed */
   border: var(--cozy-border-width) solid var(--color-border);
   border-radius: var(--cozy-border-radius-lg);
   background-color: #E2DDD5; /* Fondo de escritorio */
@@ -739,7 +740,17 @@ body {
   display: block; /* Avoid flex scrollable loss bug */
 }
 
-/* El Lienzo/Papel de libreta */
+/* Contenedor de escala para centrar y dimensionar el lienzo transformado */
+.paper-scaler-wrapper {
+  width: 100%;
+  height: 1600px; /* Dinámicamente recalculado por JS en pantallas pequeñas */
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow: visible;
+}
+
+/* El Lienzo/Papel de libreta - mantiene resolución base de 1200x1600 */
 .paper-canvas-wrapper {
   position: relative;
   box-shadow: 0 10px 30px rgba(100, 90, 80, 0.15);
