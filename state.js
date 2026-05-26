@@ -20,6 +20,11 @@ class StateManager {
         if (this.state.notebooks) {
           this.state.notebooks.forEach(n => {
             if (!n.imageBlocks) n.imageBlocks = [];
+            if (n.textBlocks) {
+              n.textBlocks.forEach(tb => {
+                if (tb.transparent === undefined) tb.transparent = false;
+              });
+            }
           });
         }
         
@@ -174,14 +179,15 @@ class StateManager {
     }
   }
 
-  addTextBlock(notebookId, text, x, y) {
+  addTextBlock(notebookId, text, x, y, transparent) {
     const notebook = this.getNotebook(notebookId);
     if (notebook) {
       const newBlock = {
         id: 'block-' + Date.now(),
         text: text || '',
         x: x || 100,
-        y: y || 100
+        y: y || 100,
+        transparent: !!transparent
       };
       notebook.textBlocks.push(newBlock);
       this.saveState();
@@ -190,7 +196,7 @@ class StateManager {
     return null;
   }
 
-  updateTextBlock(notebookId, blockId, text, x, y) {
+  updateTextBlock(notebookId, blockId, text, x, y, transparent) {
     const notebook = this.getNotebook(notebookId);
     if (notebook) {
       const block = notebook.textBlocks.find(b => b.id === blockId);
@@ -198,6 +204,7 @@ class StateManager {
         if (text !== undefined) block.text = text;
         if (x !== undefined) block.x = x;
         if (y !== undefined) block.y = y;
+        if (transparent !== undefined) block.transparent = transparent;
         this.saveState();
       }
     }

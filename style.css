@@ -992,6 +992,54 @@ body {
   background: #d67a6c;
 }
 
+/* Background toggle button styling (¡Nuevo! 🎨) */
+.notion-text-block-bg-toggle-btn {
+  position: absolute;
+  right: 18px; /* Sits to the left of the delete button (right: -8px) */
+  top: -8px;
+  background: var(--color-primary);
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.65rem;
+  box-shadow: var(--cozy-shadow-sm);
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 12;
+  user-select: none;
+}
+
+.notion-text-block-container:hover .notion-text-block-bg-toggle-btn {
+  opacity: 1;
+}
+
+.notion-text-block-bg-toggle-btn:hover {
+  transform: scale(1.1);
+  background: var(--color-accent);
+}
+
+/* Transparent block styling for overlaying text directly on top of photos/images */
+.notion-text-block-container.transparent-bg {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.notion-text-block-container.transparent-bg:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(140, 120, 98, 0.2) !important;
+}
+
+.notion-text-block-container.transparent-bg:focus-within {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: var(--color-accent) !important;
+}
+
 /* Barra lateral dentro del cuaderno */
 .notebook-study-sidebar {
   width: 200px;
@@ -2021,8 +2069,8 @@ body.brutalist-theme .bookshelf-shelf-decorator {
   }
   
   .canvas-scroll-container {
-    height: 500px;
-    padding: 20px;
+    height: 600px;
+    padding: 16px;
   }
   
   .planner-layout {
@@ -2037,9 +2085,18 @@ body.brutalist-theme .bookshelf-shelf-decorator {
     flex-direction: column;
   }
 
+  body {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
   /* Mostrar barra superior móvil */
   .mobile-top-bar {
     display: flex !important;
+    margin-bottom: 8px !important;
+    padding-bottom: 8px !important;
   }
 
   /* Mostrar botón de cerrar sidebar móvil */
@@ -2128,14 +2185,18 @@ body.brutalist-theme .bookshelf-shelf-decorator {
   }
 
   .app-main-content {
-    padding: 20px;
-    height: calc(100vh - 60px);
+    padding: 12px 12px 0 12px !important;
+    height: calc(100vh - 56px) !important;
+    overflow: hidden !important; /* Locks outer scroll completely */
   }
 
   /* Bookshelf Mobile adjustments */
   .bookshelf-container {
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
     gap: 24px;
+    height: 100%;
+    overflow-y: auto;
+    padding-bottom: 40px;
   }
 
   .notebook-book {
@@ -2149,20 +2210,79 @@ body.brutalist-theme .bookshelf-shelf-decorator {
     height: 40px;
   }
 
-  /* Canvas Toolbar Mobile Wrap */
+  /* Compact and smaller headers on Mobile Visualizer */
+  .notebook-viewer-header {
+    margin-bottom: 10px !important;
+    padding-bottom: 8px !important;
+    gap: 8px !important;
+  }
+  
+  .notebook-title-input {
+    font-size: 1.15rem !important;
+  }
+
+  /* SLEEK HORIZONTALLY SCROLLABLE SWIPEABLE TOOLBAR (¡Nuevo! 📱) */
   .canvas-toolbar {
-    padding: 8px 12px;
-    gap: 8px;
-    justify-content: center;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    justify-content: flex-start !important;
+    gap: 12px !important;
+    padding: 6px 12px !important;
+    white-space: nowrap !important;
+    width: 100% !important;
+    border-radius: var(--cozy-border-radius-md) !important;
+    box-shadow: var(--cozy-shadow-sm) !important;
+    scrollbar-width: thin;
+  }
+
+  .canvas-toolbar::-webkit-scrollbar {
+    height: 4px;
+  }
+  
+  .canvas-toolbar::-webkit-scrollbar-thumb {
+    background: var(--color-primary-light);
+    border-radius: 2px;
   }
 
   .toolbar-group {
-    padding: 2px 0;
+    flex-shrink: 0 !important; /* Prevents shrinking inside horizontal scroll */
+    border-right: 1px solid var(--color-border) !important;
+    padding-right: 12px !important;
+    gap: 8px !important;
   }
 
-  .toolbar-group:not(:last-child) {
-    border-right: none;
-    padding-right: 0;
+  .toolbar-group:last-child {
+    border-right: none !important;
+    padding-right: 0 !important;
+  }
+
+  /* Lock outer scroll and maximize hybrid workspace height */
+  #notebook-viewer-tab {
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .hybrid-workspace-container {
+    height: calc(100vh - 190px) !important; /* Maximizes remaining vertical space */
+    flex-direction: column !important;
+    overflow: hidden !important;
+    gap: 0px !important;
+  }
+
+  /* Giant drawing canvas container on mobile */
+  .canvas-scroll-container {
+    height: 100% !important;
+    flex-grow: 1 !important;
+    padding: 6px !important;
+    border-radius: var(--cozy-border-radius-md) !important;
+  }
+
+  /* Hide flashcards sidebar on mobile to gain huge drawing space */
+  .notebook-study-sidebar {
+    display: none !important;
   }
 
   /* Study Deck components */

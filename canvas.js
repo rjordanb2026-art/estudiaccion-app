@@ -23,7 +23,7 @@ class CozyCanvas {
     this.undoStack = [];
     this.maxUndoStates = 25;
 
-    this.currentTool = 'pencil'; // 'pencil', 'highlighter', 'eraser', 'text', 'hand'
+    this.currentTool = 'hand'; // 'pencil', 'highlighter', 'eraser', 'text', 'hand'
     this.currentColor = '#4A4E69';
     this.currentStrokeWidth = 4;
     this.notebookId = null;
@@ -32,8 +32,10 @@ class CozyCanvas {
     this.lastX = 0;
     this.lastY = 0;
 
-    // Default z-index of the paint canvas (pencil tool is active initially)
-    this.canvas.style.zIndex = '8';
+    // Default z-index of the paint canvas (hand tool is active initially)
+    this.canvas.style.zIndex = '4';
+    this.canvas.classList.add('tool-hand');
+    this.scrollContainer.classList.add('tool-hand');
 
     this.initCanvasEvents();
     this.initToolbarEvents();
@@ -443,6 +445,22 @@ class CozyCanvas {
     this.notebookId = id;
     this.undoStack = []; // Reset undo stack per notebook
 
+    // Always reset the active tool to Hand tool on entering any notebook to avoid accidental touch drawing
+    this.currentTool = 'hand';
+    this.canvas.className = 'tool-hand';
+    this.scrollContainer.className = 'canvas-scroll-container tool-hand';
+    this.canvas.style.zIndex = '4';
+
+    // Update the active state button on the toolbar UI
+    const toolBtns = document.querySelectorAll('.tool-btn');
+    toolBtns.forEach(btn => {
+      if (btn.dataset.tool === 'hand') {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
     const notebook = stateManager.getNotebook(id);
     if (!notebook) return;
 
@@ -467,7 +485,7 @@ class CozyCanvas {
     // Load Notion blocks
     if (notebook.textBlocks) {
       notebook.textBlocks.forEach(block => {
-        this.renderTextBlockDOM(block.id, block.x, block.y, block.text);
+        this.renderTextBlockDOM(block.id, block.x, block.y, block.text, block.transparent);
       });
     }
 
@@ -610,18 +628,22 @@ class CozyCanvas {
   /* --- NOTION-STYLE DRAGGABLE TEXT BLOCKS --- */
   createTextBlock(x, y, text) {
     if (!this.notebookId) return;
-    const block = stateManager.addTextBlock(this.notebookId, text, x, y);
+    const block = stateManager.addTextBlock(this.notebookId, text, x, y, false);
     if (block) {
-      this.renderTextBlockDOM(block.id, x, y, text);
+      this.renderTextBlockDOM(block.id, x, y, text, false);
     }
   }
 
-  renderTextBlockDOM(id, x, y, text) {
+  renderTextBlockDOM(id, x, y, text, transparent = false) {
     const container = document.createElement('div');
     container.className = 'notion-text-block-container';
     container.style.left = x + 'px';
     container.style.top = y + 'px';
     container.dataset.id = id;
+
+    if (transparent) {
+      container.classList.add('transparent-bg');
+    }
 
     // Separate Drag Handle (⋮⋮ icon)
     const handle = document.createElement('div');
@@ -650,7 +672,8 @@ class CozyCanvas {
         container.remove();
         stateManager.deleteTextBlock(this.notebookId, id);
       } else {
-        stateManager.updateTextBlock(this.notebookId, id, rawText);
+        const isTransparent = container.classList.contains('transparent-bg');
+        stateManager.updateTextBlock(this.notebookId, id, rawText, undefined, undefined, isTransparent);
       }
     });
 
@@ -669,6 +692,31 @@ class CozyCanvas {
         if (this.selectedBlock && this.selectedBlock.id === id) {
           this.selectedBlock = null;
         }
+      }
+    });
+
+    // Background Toggle Button (¡Nuevo! 🎨)
+    const bgToggleBtn = document.createElement('div');
+    bgToggleBtn.className = 'notion-text-block-bg-toggle-btn';
+    bgToggleBtn.innerHTML = transparent ? '<i class="fa-solid fa-fill"></i>' : '<i class="fa-solid fa-fill-drip"></i>';
+    bgToggleBtn.title = transparent ? 'Mostrar fondo de bloque' : 'Hacer fondo transparente';
+    container.appendChild(bgToggleBtn);
+
+    bgToggleBtn.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      
+      const isCurrentlyTransparent = container.classList.contains('transparent-bg');
+      if (isCurrentlyTransparent) {
+        container.classList.remove('transparent-bg');
+        bgToggleBtn.innerHTML = '<i class="fa-solid fa-fill-drip"></i>';
+        bgToggleBtn.title = 'Hacer fondo transparente';
+        stateManager.updateTextBlock(this.notebookId, id, undefined, undefined, undefined, false);
+      } else {
+        container.classList.add('transparent-bg');
+        bgToggleBtn.innerHTML = '<i class="fa-solid fa-fill"></i>';
+        bgToggleBtn.title = 'Mostrar fondo de bloque';
+        stateManager.updateTextBlock(this.notebookId, id, undefined, undefined, undefined, true);
       }
     });
 
@@ -918,9 +966,27 @@ class CozyCanvas {
             // Multiply by scaling factor to draw at exactly the correct coordinates
             const drawX = block.x * scaleX;
             const drawY = block.y * scaleY;
-            
-            // Multi-line text support
             const lines = block.text.split('\n');
+            
+            // Draw a beautiful cozy white background block if NOT transparent
+            if (!block.transparent) {
+              expCtx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+              let maxLen = 0;
+              lines.forEach(l => { if (l.length > maxLen) maxLen = l.length; });
+              const blockWidth = Math.min(320 * scaleX, Math.max(160 * scaleX, (maxLen * 11 + 24) * scaleX));
+              const blockHeight = (lines.length * 26 + 18) * scaleY;
+              
+              expCtx.beginPath();
+              if (expCtx.roundRect) {
+                expCtx.roundRect(drawX - 8, drawY - 20, blockWidth, blockHeight, 8 * scaleX);
+              } else {
+                expCtx.rect(drawX - 8, drawY - 20, blockWidth, blockHeight);
+              }
+              expCtx.fill();
+            }
+            
+            // Draw the actual text lines on top
+            expCtx.fillStyle = '#4A3E3D';
             lines.forEach((line, index) => {
               expCtx.fillText(line, drawX, drawY + (index * 26));
             });
@@ -961,9 +1027,9 @@ class CozyCanvas {
     if (this.selectedBlock.type === 'text') {
       const block = notebook.textBlocks.find(b => b.id === id);
       if (block) {
-        const newBlock = stateManager.addTextBlock(this.notebookId, block.text, targetX, targetY);
+        const newBlock = stateManager.addTextBlock(this.notebookId, block.text, targetX, targetY, block.transparent);
         if (newBlock) {
-          this.renderTextBlockDOM(newBlock.id, targetX, targetY, block.text);
+          this.renderTextBlockDOM(newBlock.id, targetX, targetY, block.text, block.transparent);
           
           // Auto-select the newly created clone for cascading duplication
           const newElem = this.workspace.querySelector(`.notion-text-block-container[data-id="${newBlock.id}"]`);

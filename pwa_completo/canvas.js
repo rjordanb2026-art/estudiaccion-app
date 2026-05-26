@@ -23,7 +23,7 @@ class CozyCanvas {
     this.undoStack = [];
     this.maxUndoStates = 25;
 
-    this.currentTool = 'pencil'; // 'pencil', 'highlighter', 'eraser', 'text', 'hand'
+    this.currentTool = 'hand'; // 'pencil', 'highlighter', 'eraser', 'text', 'hand'
     this.currentColor = '#4A4E69';
     this.currentStrokeWidth = 4;
     this.notebookId = null;
@@ -32,8 +32,10 @@ class CozyCanvas {
     this.lastX = 0;
     this.lastY = 0;
 
-    // Default z-index of the paint canvas (pencil tool is active initially)
-    this.canvas.style.zIndex = '8';
+    // Default z-index of the paint canvas (hand tool is active initially)
+    this.canvas.style.zIndex = '4';
+    this.canvas.classList.add('tool-hand');
+    this.scrollContainer.classList.add('tool-hand');
 
     this.initCanvasEvents();
     this.initToolbarEvents();
@@ -442,6 +444,22 @@ class CozyCanvas {
   loadNotebook(id) {
     this.notebookId = id;
     this.undoStack = []; // Reset undo stack per notebook
+
+    // Always reset the active tool to Hand tool on entering any notebook to avoid accidental touch drawing
+    this.currentTool = 'hand';
+    this.canvas.className = 'tool-hand';
+    this.scrollContainer.className = 'canvas-scroll-container tool-hand';
+    this.canvas.style.zIndex = '4';
+
+    // Update the active state button on the toolbar UI
+    const toolBtns = document.querySelectorAll('.tool-btn');
+    toolBtns.forEach(btn => {
+      if (btn.dataset.tool === 'hand') {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
 
     const notebook = stateManager.getNotebook(id);
     if (!notebook) return;
