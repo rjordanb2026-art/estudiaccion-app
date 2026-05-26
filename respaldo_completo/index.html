@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EstudiAcción | Tu Espacio Universitario Cozy</title>
+  <!-- SEO & Icons -->
+  <meta name="description" content="La fusión perfecta de Notion y Kilonotes optimizada para estudiantes. Organiza tus materias, toma apuntes a mano o con teclado, crea flashcards con active recall y relájate con lofi.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📚</text></svg>">
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Caveat:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome for Premium Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Local Stylesheets -->
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+</head>
+<body class="cozy-theme">
+
+  <!-- MAIN WRAPPER -->
+  <div class="app-container">
+    
+    <!-- SIDEBAR NAVIGATION -->
+    <aside class="app-sidebar" id="app-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-header-row" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <div class="app-logo">
+            <span class="logo-emoji">📚</span>
+            <div class="logo-text">
+              <h1>EstudiAcción</h1>
+              <span class="logo-subtitle">mi espacio cozy</span>
+            </div>
+          </div>
+          <button class="sidebar-close-btn" id="btn-sidebar-close" aria-label="Cerrar menú" style="display: none; background: transparent; border: none; font-size: 1.5rem; cursor: pointer; color: var(--color-text-muted);">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <!-- Theme Switcher -->
+        <div class="theme-switcher-wrapper" style="margin-top: 16px;">
+          <label style="font-size: 0.75rem; font-weight: 700; color: var(--color-text-muted); display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+            <i class="fa-solid fa-palette"></i> TEMA DE ESTUDIO
+          </label>
+          <select id="app-theme-select" class="cozy-select" style="width: 100%;">
+            <option value="cozy">Cozy Cream ☕</option>
+            <option value="dark">Cyber Dark 🌌</option>
+            <option value="brutalist">Neo-Brutalist 🎨</option>
+          </select>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu">
+        <button class="menu-item active" data-tab="bookshelf-tab" id="btn-tab-bookshelf">
+          <i class="fa-solid fa-book-open menu-icon"></i>
+          <span>Mis Libretas</span>
+        </button>
+        <button class="menu-item" data-tab="planner-tab" id="btn-tab-planner">
+          <i class="fa-solid fa-calendar-days menu-icon"></i>
+          <span>Planificador</span>
+        </button>
+        <button class="menu-item" data-tab="flashcards-tab" id="btn-tab-flashcards">
+          <i class="fa-solid fa-brain menu-icon"></i>
+          <span>Repaso Activo</span>
+        </button>
+      </nav>
+
+      <!-- Sidebar Widgets Section -->
+      <div class="sidebar-widgets">
+        
+        <!-- FULL POMODORO WIDGET (DOCK IN SIDEBAR) -->
+        <div class="sidebar-full-widget pomodoro-widget" id="sidebar-pomo-widget">
+          <div class="widget-header">
+            <span><i class="fa-solid fa-clock"></i> Pomodoro</span>
+          </div>
+          <div class="pomo-body">
+            <!-- Circular Progress Ring -->
+            <div class="pomo-circle-container">
+              <svg class="pomo-svg" viewBox="0 0 100 100">
+                <circle class="pomo-circle-bg" cx="50" cy="50" r="45"></circle>
+                <circle class="pomo-circle-progress" id="pomo-progress-ring" cx="50" cy="50" r="45"></circle>
+              </svg>
+              <div class="pomo-time-display" id="pomo-time-display">25:00</div>
+            </div>
+
+            <!-- Mode display label -->
+            <span class="pomo-mode-label" id="pomo-mode-label">¡Hora de Concentrarse! 🧠</span>
+
+            <!-- Controls -->
+            <div class="pomo-controls">
+              <button class="btn btn-secondary" id="btn-pomo-short-break" style="padding: 6px 10px; font-size: 0.75rem;">Descanso</button>
+              <button class="btn btn-circle btn-primary" id="btn-pomo-toggle" style="width: 38px; height: 38px;">
+                <i class="fa-solid fa-play"></i>
+              </button>
+              <button class="btn btn-secondary" id="btn-pomo-reset" style="padding: 6px 10px; font-size: 0.75rem;"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- FULL AUDIO MIXER PANEL (DOCK IN SIDEBAR) -->
+        <div class="sidebar-full-widget" id="sidebar-audio-widget">
+          <div class="widget-header">
+            <span><i class="fa-solid fa-volume-high"></i> Sonido & Lofi</span>
+            <span class="playing-status" id="lofi-status">Pausado</span>
+          </div>
+          <div class="widget-body" style="padding: 10px 0 0 0;">
+            <!-- Station Selector dropdown -->
+            <div style="margin-bottom: 12px;">
+              <select id="audio-station-select" class="cozy-select" style="width: 100%; font-size: 0.75rem; padding: 4px 8px; font-weight: 700;">
+                <option value="lofi">Radio Lo-Fi Cozy 📻</option>
+                <option value="piano">Piano de Enfoque (Zen) 🎹</option>
+                <option value="binaural">Ondas Binaurales (Alpha) 🧠</option>
+              </select>
+            </div>
+
+            <!-- Lo-Fi player controls -->
+            <div class="lofi-player-box" style="margin-bottom: 12px; gap: 10px;">
+              <div class="lofi-disc-spinning" id="lofi-disc" style="width: 36px; height: 36px; font-size: 1.6rem;">📻</div>
+              <div class="lofi-track-info" style="flex-grow: 1;">
+                <h4 style="font-size: 0.8rem;">Estación Lo-Fi</h4>
+                <p id="lofi-now-playing" style="font-size: 0.65rem;">Música ambiental</p>
+              </div>
+              <button class="btn btn-circle btn-primary" id="btn-global-lofi-toggle" style="width: 34px; height: 34px;">
+                <i class="fa-solid fa-play"></i>
+              </button>
+            </div>
+
+            <!-- Environment Synthesizer (Sliders) -->
+            <div class="ambient-mixer" style="padding-top: 8px;">
+              <div class="mixer-row" style="margin-bottom: 6px;">
+                <label style="font-size: 0.7rem;"><i class="fa-solid fa-cloud-showers-water"></i> Lluvia</label>
+                <input type="range" id="vol-rain" min="0" max="100" value="0" class="cozy-slider sound-mixer-slider">
+              </div>
+              
+              <div class="mixer-row" style="margin-bottom: 6px;">
+                <label style="font-size: 0.7rem;"><i class="fa-solid fa-mug-saucer"></i> Cafetería</label>
+                <input type="range" id="vol-cafe" min="0" max="100" value="0" class="cozy-slider sound-mixer-slider">
+              </div>
+
+              <div class="mixer-row" style="margin-bottom: 6px;">
+                <label style="font-size: 0.7rem;"><i class="fa-solid fa-fire"></i> Fuego</label>
+                <input type="range" id="vol-fire" min="0" max="100" value="0" class="cozy-slider sound-mixer-slider">
+              </div>
+
+              <div class="mixer-row" style="margin-bottom: 6px;">
+                <label style="font-size: 0.7rem;"><i class="fa-solid fa-wind"></i> Viento</label>
+                <input type="range" id="vol-wind" min="0" max="100" value="0" class="cozy-slider sound-mixer-slider">
+              </div>
+
+              <div class="mixer-row" style="margin-bottom: 4px;">
+                <label style="font-size: 0.7rem;"><i class="fa-solid fa-water"></i> Ruido Marrón</label>
+                <input type="range" id="vol-brown" min="0" max="100" value="0" class="cozy-slider sound-mixer-slider">
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="sidebar-footer">
+        <p>Hecho para universitarios ✨</p>
+      </div>
+    </aside>
+
+    <!-- MAIN MAIN CONTENT CONTAINER -->
+    <main class="app-main-content">
+      
+      <!-- Mobile Top Bar for toggling menu -->
+      <div class="mobile-top-bar" style="display: none; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: var(--cozy-border-width) solid var(--color-border);">
+        <button class="mobile-toggle-btn" id="btn-sidebar-mobile-toggle" aria-label="Abrir menú" style="background: transparent; border: none; font-size: 1.5rem; cursor: pointer; color: var(--color-primary-dark);">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <span class="mobile-brand" style="font-size: 1.2rem; font-weight: 700; color: var(--color-primary-dark);">EstudiAcción 📚</span>
+      </div>
+      
+      <!-- TAB: BOOKSHELF (📚 MIS LIBRETAS) -->
+      <section id="bookshelf-tab" class="tab-panel active">
+        <header class="tab-header">
+          <div>
+            <h2>Mi Estantería de Libretas</h2>
+            <p class="section-desc">Organiza tus asignaturas en cuadernos personalizados y bonitos.</p>
+          </div>
+          <button class="btn btn-primary" id="btn-create-notebook">
+            <i class="fa-solid fa-plus"></i> Nueva Libreta
+          </button>
+        </header>
+
+        <!-- Bookshelf shelves container -->
+        <div class="bookshelf-container" id="bookshelf-grid">
+          <!-- Dinámicamente llenado por JS -->
+        </div>
+      </section>
+
+      <!-- TAB: NOTEBOOK CANVAS VIEWER (🔍 VISUALIZADOR DE DIBUJO Y TEXTO) -->
+      <section id="notebook-viewer-tab" class="tab-panel">
+        <div class="notebook-viewer-header">
+          <div class="viewer-left">
+            <button class="btn btn-circle" id="btn-viewer-back" title="Volver a la Estantería">
+              <i class="fa-solid fa-arrow-left"></i>
+            </button>
+            <div class="notebook-meta-edit">
+              <input type="text" id="viewer-notebook-title" value="Título de Libreta" class="notebook-title-input">
+              <span class="notebook-subject-tag" id="viewer-notebook-subject">Materia</span>
+            </div>
+          </div>
+
+          <!-- Canvas & Editor Controls Toolbar -->
+          <div class="canvas-toolbar">
+            <!-- Tools -->
+            <div class="toolbar-group">
+              <button class="tool-btn active" data-tool="pencil" id="tool-pencil" title="Lápiz">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+              <button class="tool-btn" data-tool="highlighter" id="tool-highlighter" title="Subrayador">
+                <i class="fa-solid fa-highlighter"></i>
+              </button>
+              <button class="tool-btn" data-tool="eraser" id="tool-eraser" title="Borrador">
+                <i class="fa-solid fa-eraser"></i>
+              </button>
+              <button class="tool-btn" data-tool="text" id="tool-text" title="Insertar Bloque de Texto (Haz clic en el papel)">
+                <i class="fa-solid fa-font"></i>
+              </button>
+              <button class="tool-btn" data-tool="hand" id="tool-hand" title="Mover Lienzo (Mano)">
+                <i class="fa-solid fa-hand"></i>
+              </button>
+            </div>
+
+            <!-- Customizer (Stroke size & Transparency) -->
+            <div class="toolbar-group">
+              <span class="tool-label">Trazo</span>
+              <input type="range" id="canvas-stroke-width" min="2" max="24" value="4" class="cozy-slider">
+              
+              <!-- Color Palette picker (Pastel Colors) -->
+              <div class="palette-colors">
+                <button class="color-dot active" data-color="#4A4E69" style="background-color: #4A4E69;"></button>
+                <button class="color-dot" data-color="#E07A5F" style="background-color: #E07A5F;"></button>
+                <button class="color-dot" data-color="#81B29A" style="background-color: #81B29A;"></button>
+                <button class="color-dot" data-color="#F2CC8F" style="background-color: #F2CC8F;"></button>
+                <button class="color-dot" data-color="#9A8C98" style="background-color: #9A8C98;"></button>
+                <button class="color-dot" data-color="#A8DADC" style="background-color: #A8DADC;"></button>
+                <button class="color-dot" data-color="#E8AEB7" style="background-color: #E8AEB7;"></button>
+              </div>
+            </div>
+
+            <!-- Paper styles -->
+            <div class="toolbar-group">
+              <span class="tool-label">Papel</span>
+              <select id="canvas-paper-style" class="cozy-select">
+                <option value="grid">Cuadrícula 📐</option>
+                <option value="lines">Líneas 📝</option>
+                <option value="blank">Liso 📄</option>
+              </select>
+            </div>
+
+            <!-- Actions -->
+            <div class="toolbar-group">
+              <button class="btn btn-secondary btn-icon-only" id="btn-canvas-undo" title="Deshacer Trazo (Ctrl+Z)">
+                <i class="fa-solid fa-rotate-left"></i>
+              </button>
+              <button class="btn btn-secondary btn-icon-only" id="btn-canvas-clear" title="Borrar Lienzo">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+              <button class="btn btn-secondary btn-icon-only" id="btn-canvas-upload-image" title="Añadir Imagen a Libreta">
+                <i class="fa-regular fa-image"></i>
+              </button>
+              <button class="btn btn-secondary btn-icon-only" id="btn-canvas-take-photo" title="Tomar Foto con Cámara">
+                <i class="fa-solid fa-camera"></i>
+              </button>
+              <input type="file" id="canvas-image-input" accept="image/*" style="display: none;">
+              <button class="btn btn-secondary btn-icon-only" id="btn-canvas-download" title="Descargar como Imagen">
+                <i class="fa-solid fa-download"></i>
+              </button>
+              <button class="btn btn-accent" id="btn-add-notebook-flashcard">
+                <i class="fa-solid fa-lightbulb"></i> Añadir Tarjeta
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- The Hybrid Editing Area -->
+        <div class="hybrid-workspace-container">
+          <div class="canvas-scroll-container">
+            <div class="paper-canvas-wrapper" id="paper-workspace">
+              <!-- Grid background is loaded dynamically based on select option -->
+              <canvas id="paint-canvas" width="1200" height="1600"></canvas>
+              <!-- Interactive Text blocks will be inserted here dynamically -->
+            </div>
+          </div>
+
+          <!-- Active Notebook Sidebar (for quick Study Deck preview) -->
+          <div class="notebook-study-sidebar">
+            <div class="study-sidebar-header">
+              <h3><i class="fa-solid fa-brain"></i> Tarjetas de esta Libreta</h3>
+            </div>
+            <div class="study-sidebar-list" id="notebook-flashcards-list">
+              <!-- Dinámicamente cargados -->
+            </div>
+            <button class="btn btn-primary btn-block" id="btn-study-this-notebook">
+              <i class="fa-solid fa-graduation-cap"></i> Repasar este cuaderno
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: PLANNER (📅 PLANIFICADOR & CALENDARIO) -->
+      <section id="planner-tab" class="tab-panel">
+        <header class="tab-header">
+          <div>
+            <h2>Planificador Universitario</h2>
+            <p class="section-desc">Gestiona tus exámenes, proyectos y tareas pendientes con colores personalizados.</p>
+          </div>
+          <button class="btn btn-primary" id="btn-add-event">
+            <i class="fa-solid fa-calendar-plus"></i> Nueva Entrega
+          </button>
+        </header>
+
+        <div class="planner-layout">
+          <!-- Calendar Card -->
+          <div class="planner-card calendar-card">
+            <div class="calendar-controls">
+              <button class="btn-calendar-nav" id="btn-prev-month"><i class="fa-solid fa-chevron-left"></i></button>
+              <h3 id="calendar-month-year">Mayo 2026</h3>
+              <button class="btn-calendar-nav" id="btn-next-month"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+            <div class="calendar-grid">
+              <div class="calendar-day-header">Dom</div>
+              <div class="calendar-day-header">Lun</div>
+              <div class="calendar-day-header">Mar</div>
+              <div class="calendar-day-header">Mié</div>
+              <div class="calendar-day-header">Jue</div>
+              <div class="calendar-day-header">Vie</div>
+              <div class="calendar-day-header">Sáb</div>
+              <!-- Days will be inserted dynamically by JS -->
+              <div class="calendar-days-container" id="calendar-days"></div>
+            </div>
+          </div>
+
+          <!-- Pending Tasks List (Notion Style) -->
+          <div class="planner-card tasks-card">
+            <h3><i class="fa-solid fa-list-check"></i> Tareas y Entregas</h3>
+            <div class="tasks-filter">
+              <button class="filter-chip active" data-filter="all">Todas</button>
+              <button class="filter-chip" data-filter="pending">Pendientes</button>
+              <button class="filter-chip" data-filter="completed">Completadas</button>
+            </div>
+            <div class="tasks-list" id="planner-tasks-list">
+              <!-- Dinámicamente cargados -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: FLASHCARDS (🧠 REPASO ACTIVO) -->
+      <section id="flashcards-tab" class="tab-panel">
+        <header class="tab-header">
+          <div>
+            <h2>Repaso Activo e Inteligente</h2>
+            <p class="section-desc">Estudia de forma eficiente con nuestro sistema de repetición espaciada.</p>
+          </div>
+        </header>
+
+        <div class="flashcards-overview-layout" id="flashcards-welcome-view">
+          <!-- Quick stats -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <span class="stat-num" id="stat-total-cards">0</span>
+              <span class="stat-label">Tarjetas Creadas</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-num" id="stat-reviewed-cards">0</span>
+              <span class="stat-label">Tarjetas Repasadas</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-num" id="stat-easy-cards">0</span>
+              <span class="stat-label">Aprendidas al 100%</span>
+            </div>
+          </div>
+
+          <div class="deck-selector-section">
+            <h3>Selecciona una libreta para repasar</h3>
+            <div class="deck-grid" id="deck-select-grid">
+              <!-- Dinámicamente cargadas -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Study Session Dashboard (Hidden by default) -->
+        <div class="study-session-container hidden" id="study-session-view">
+          <div class="study-session-header">
+            <button class="btn btn-secondary" id="btn-exit-study">
+              <i class="fa-solid fa-xmark"></i> Salir del Repaso
+            </button>
+            <div class="study-progress-bar-wrapper">
+              <div class="study-progress-bar" id="study-progress-indicator" style="width: 0%;"></div>
+            </div>
+            <span class="study-count-display" id="study-index-display">1 de 10</span>
+          </div>
+
+          <!-- THE 3D FLIPPING CARD COMPONENT -->
+          <div class="study-card-wrapper">
+            <div class="flashcard-3d" id="interactive-flashcard">
+              <!-- Front of the Card -->
+              <div class="card-face card-front">
+                <span class="card-hint-badge"><i class="fa-regular fa-circle-question"></i> PREGUNTA</span>
+                <div class="card-text-content" id="card-front-text">¿Cómo funciona la fotosíntesis?</div>
+                <p class="card-action-hint">Haz clic en la tarjeta para voltearla ✨</p>
+              </div>
+              <!-- Back of the Card -->
+              <div class="card-face card-back">
+                <span class="card-hint-badge"><i class="fa-regular fa-circle-check"></i> RESPUESTA</span>
+                <div class="card-text-content" id="card-back-text">Es el proceso por el cual las plantas convierten la luz solar en energía química, usando dióxido de carbono y agua.</div>
+                <p class="card-action-hint">Haz clic para volver a ver la pregunta</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Study Ratings Controls -->
+          <div class="study-rating-controls hidden" id="study-rating-buttons">
+            <p class="rating-instructions">¿Qué tan bien recordaste esta tarjeta?</p>
+            <div class="rating-btn-row">
+              <button class="btn btn-danger btn-rating" data-difficulty="hard">
+                <i class="fa-solid fa-face-frown"></i> Difícil <small>(Pronto)</small>
+              </button>
+              <button class="btn btn-warning btn-rating" data-difficulty="medium">
+                <i class="fa-solid fa-face-meh"></i> Regular <small>(Medio)</small>
+              </button>
+              <button class="btn btn-success btn-rating" data-difficulty="easy">
+                <i class="fa-solid fa-face-smile"></i> Fácil <small>(Guardado)</small>
+              </button>
+            </div>
+          </div>
+
+          <div class="click-to-reveal-prompt" id="click-to-reveal-prompt">
+            <button class="btn btn-accent btn-large" id="btn-reveal-card">
+              <i class="fa-solid fa-eye"></i> Revelar Respuesta
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+
+
+  <!-- MODALS -->
+
+  <!-- Modal: Crear Libreta -->
+  <div class="cozy-modal-overlay hidden" id="modal-create-notebook">
+    <div class="cozy-modal">
+      <div class="modal-header">
+        <h3>Crear Nueva Libreta 📚</h3>
+        <button class="modal-close-btn" id="btn-close-notebook-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group">
+          <label for="notebook-name">Título de la Libreta</label>
+          <input type="text" id="notebook-name" placeholder="Ej: Física II, Cálculo, Historia..." class="cozy-input">
+        </div>
+
+        <div class="input-group">
+          <label for="notebook-subject">Materia / Categoría</label>
+          <input type="text" id="notebook-subject" placeholder="Ej: Semestre II, Universidad..." class="cozy-input">
+        </div>
+
+        <div class="input-group">
+          <label>Portada y Estilo Pastel</label>
+          <div class="cover-palettes">
+            <button class="cover-selector-btn active" data-color="#E8AEB7" style="background-color: #E8AEB7;" title="Pastel Rosa"></button>
+            <button class="cover-selector-btn" data-color="#A8DADC" style="background-color: #A8DADC;" title="Pastel Celeste"></button>
+            <button class="cover-selector-btn" data-color="#F4F1DE" style="background-color: #F4F1DE;" title="Crema Vintage"></button>
+            <button class="cover-selector-btn" data-color="#F2CC8F" style="background-color: #F2CC8F;" title="Pastel Arena"></button>
+            <button class="cover-selector-btn" data-color="#81B29A" style="background-color: #81B29A;" title="Pastel Menta"></button>
+            <button class="cover-selector-btn" data-color="#D6CFC7" style="background-color: #D6CFC7;" title="Gris Lofi"></button>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Ícono de Portada</label>
+          <div class="cover-icons-list">
+            <button class="icon-selector-btn active" data-icon="📝">📝</button>
+            <button class="icon-selector-btn" data-icon="📐">📐</button>
+            <button class="icon-selector-btn" data-icon="🧪">🧪</button>
+            <button class="icon-selector-btn" data-icon="💻">💻</button>
+            <button class="icon-selector-btn" data-icon="🎨">🎨</button>
+            <button class="icon-selector-btn" data-icon="📊">📊</button>
+            <button class="icon-selector-btn" data-icon="⚖️">⚖️</button>
+            <button class="icon-selector-btn" data-icon="🧬">🧬</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-cancel-notebook-modal">Cancelar</button>
+        <button class="btn btn-primary" id="btn-confirm-create-notebook">Crear Libreta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Crear Flashcard (Tarjeta) -->
+  <div class="cozy-modal-overlay hidden" id="modal-create-flashcard">
+    <div class="cozy-modal">
+      <div class="modal-header">
+        <h3>Añadir Tarjeta de Repaso 🧠</h3>
+        <button class="modal-close-btn" id="btn-close-flashcard-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-hint">Las tarjetas de estudio son específicas para cada libreta y te ayudan a retener conceptos.</p>
+        <div class="input-group">
+          <label for="flashcard-front">Pregunta / Concepto (Frente)</label>
+          <textarea id="flashcard-front" placeholder="¿Qué es...? o ¿Cuál es la fórmula de...?" class="cozy-textarea" rows="3"></textarea>
+        </div>
+        <div class="input-group">
+          <label for="flashcard-back">Respuesta / Explicación (Atrás)</label>
+          <textarea id="flashcard-back" placeholder="Es..." class="cozy-textarea" rows="3"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-cancel-flashcard-modal">Cancelar</button>
+        <button class="btn btn-primary" id="btn-confirm-create-flashcard">Guardar Tarjeta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Crear Evento / Entrega -->
+  <div class="cozy-modal-overlay hidden" id="modal-create-event">
+    <div class="cozy-modal">
+      <div class="modal-header">
+        <h3>Añadir Nueva Entrega / Examen 📅</h3>
+        <button class="modal-close-btn" id="btn-close-event-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group">
+          <label for="event-title">Nombre del Deber / Examen</label>
+          <input type="text" id="event-title" placeholder="Ej: Proyecto Final de Programación" class="cozy-input">
+        </div>
+        <div class="input-group">
+          <label for="event-date">Fecha de Entrega</label>
+          <input type="date" id="event-date" class="cozy-input">
+        </div>
+        <div class="input-group">
+          <label for="event-notebook-assoc">Vincular a Libreta (Materia)</label>
+          <select id="event-notebook-assoc" class="cozy-select">
+            <!-- Cargado por JS con cuadernos existentes -->
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="event-type">Tipo de Evento</label>
+          <select id="event-type" class="cozy-select">
+            <option value="assignment">📝 Tarea / Trabajo</option>
+            <option value="exam">🔥 Examen / Test</option>
+            <option value="reading">📖 Lectura / Estudio</option>
+            <option value="other">✨ Otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-cancel-event-modal">Cancelar</button>
+        <button class="btn btn-primary" id="btn-confirm-create-event">Crear Evento</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Tomar Foto -->
+  <div class="cozy-modal-overlay hidden" id="modal-camera" style="z-index: 2000;">
+    <div class="cozy-modal" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3>Tomar Foto con Cámara 📷</h3>
+        <button class="modal-close-btn" id="btn-close-camera-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 12px;">
+        <div class="camera-stream-container" style="width: 100%; border-radius: var(--cozy-border-radius-md); overflow: hidden; background: black; border: var(--cozy-border-width) solid var(--color-border); position: relative; aspect-ratio: 4/3;">
+          <video id="camera-preview" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+        </div>
+        <p class="modal-hint" style="text-align: center; font-size: 0.8rem;">Apunta con tu cámara y presiona el obturador para insertar la foto en tu libreta.</p>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; width: 100%;">
+        <button class="btn btn-secondary" id="btn-cancel-camera-modal">Cancelar</button>
+        <button class="btn btn-primary btn-circle" id="btn-capture-photo" style="width: 50px; height: 50px;" title="Capturar Foto">
+          <i class="fa-solid fa-camera" style="font-size: 1.3rem;"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Sidebar Overlay Mask -->
+  <div class="sidebar-overlay hidden" id="sidebar-overlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(2px); z-index: 999;"></div>
+
+  <!-- Main scripts -->
+  <script src="state.js"></script>
+  <script src="widgets.js"></script>
+  <script src="canvas.js"></script>
+  <script src="flashcards.js"></script>
+  <script src="planner.js"></script>
+  <script src="app.js"></script>
+
+  <!-- PWA Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+          .then(reg => console.log('Service Worker registered successfully!', reg))
+          .catch(err => console.log('Service Worker registration failed.', err));
+      });
+    }
+  </script>
+</body>
+</html>
